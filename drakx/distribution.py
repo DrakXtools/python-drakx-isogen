@@ -1,3 +1,6 @@
+from future.standard_library import install_aliases
+install_aliases()
+
 import shutil,os,perl,string,fnmatch,re,time,urllib.request
 from drakx.common import *
 perl.require("URPM")
