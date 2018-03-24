@@ -1,4 +1,4 @@
-import shutil,os,perl,string,fnmatch,re,time
+import shutil,os,perl,string,fnmatch,re,time,urllib2
 from drakx.common import *
 perl.require("URPM")
 perl.require("urpm")
@@ -65,12 +65,18 @@ class Distribution(object):
 
         for m in list(self.media.keys()):
             synthesis = repopath + "/" + self.media[m].getSynthesis()
-            print(color("Parsing synthesis for %s: %s" % (m, synthesis), GREEN))
-            urpm.parse_synthesis(synthesis) 
-            updates = repopath + "/" + self.media[m].getSynthesis("updates")
-            if os.path.exists(updates):
-                print(color("Parsing updates synthesis for %s: %s" % (m, synthesis), GREEN))
-                urpm.parse_synthesis(updates) 
+            print color("Retrieving synthesis for %s: %s" % (m, synthesis), GREEN)
+            synthesisfile = urllib2.urlopen(synthesis)
+            output = open(self.media[m].getLocalName(), 'wb')
+            output.write(synthesisfile.read())
+            output.close()
+            print color("Parsing synthesis for %s: %s" % (m, self.media[m].getLocalName()), GREEN)
+            urpm.parse_synthesis(self.media[m].getLocalName())
+
+            # FIXME (urrlib):
+            #if os.path.exists(updates):
+            #    print(color("Parsing updates synthesis for %s: %s" % (m, synthesis), GREEN))
+            #    urpm.parse_synthesis(updates)
 
 
         perlexc = perl.eval("@excludes = ();")
@@ -263,19 +269,35 @@ class Distribution(object):
                     continue
                 for rep in "release", "updates":
                     source = "%s/media/%s/%s/%s.rpm" % (repopath, m.name, rep, pkg.fullname())
-                    if os.path.exists(source):
-                        target = "%s/media/%s/%s.rpm" % (tmpdir, m.name, pkg.fullname())
-                        if not os.path.islink(target):
-                            pkgs.append(source)
-                            os.symlink(source, target)
-                            s = os.stat(source)
-                            m.size += s.st_size
+
+
+                    try:
+                        remotefile = urllib2.urlopen(source)
+                    except urllib2.URLError as urlerr:
+                        continue
+                    target = "%s/media/%s/%s.rpm" % (outdir, m.name, pkg.fullname())
+                    if not os.path.exists(target):
+                        pkgs.append(source)
+                        targetout = open(target, 'wb')
+                        targetout.write(remotefile.read())
+                        targetout.close()
+                        s = os.stat(target)
+                        m.size += s.st_size
+
             self.media[m.name].pkgs = pkgs
             if not os.path.exists("%s/media/%s/media_info" % (tmpdir, m.name)):
                 os.mkdir("%s/media/%s/media_info" % (tmpdir, m.name))
             if gpgName:
                 #signPackage(gpgName, gpgPass, " ".join(pkgs))
                 os.system("gpg --export --armor %s > %s/media/%s/media_info/pubkey" % (gpgName, tmpdir, m.name))
+            else:
+                try:
+                    remotepubkey = urllib2.urlopen("%s/%s/release/media_info/pubkey" % (repopath, m.name))
+                    targetpubkey = open("%s/media/%s/media_info/pubkey" % (outdir, m.name), 'wb')
+                    targetpubkey.write(remotepubkey.read())
+                    targetpubkey.close()
+                except urllib2.URLError as urlerr:
+                    print color("Couldn't retrieve pubkey for %s; ignoring..." % m.name, YELLOW)
 
         print(color("Writing %s/media/media_info/media.cfg" % tmpdir, GREEN))
         if not os.path.exists("%s/media/media_info" % tmpdir):
