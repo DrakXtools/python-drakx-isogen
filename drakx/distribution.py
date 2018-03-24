@@ -1,4 +1,4 @@
-import shutil,os,perl,string,fnmatch,re,time,urllib
+import shutil,os,perl,string,fnmatch,re,time,urllib.request
 from drakx.common import *
 perl.require("URPM")
 perl.require("urpm")
@@ -66,7 +66,7 @@ class Distribution(object):
         for m in list(self.media.keys()):
             synthesis = repopath + "/" + self.media[m].getSynthesis()
             print(color("Retrieving synthesis for %s: %s" % (m, synthesis), GREEN))
-            synthesisfile = urllib.urlopen(synthesis)
+            synthesisfile = urllib.request.urlopen(synthesis)
             output = open(self.media[m].getLocalName(), 'wb')
             output.write(synthesisfile.read())
             output.close()
@@ -272,7 +272,7 @@ class Distribution(object):
 
 
                     try:
-                        remotefile = urllib.urlopen(source)
+                        remotefile = urllib.request.urlopen(source)
                     except urllib.URLError as urlerr:
                         continue
                     target = "%s/media/%s/%s.rpm" % (outdir, m.name, pkg.fullname())
@@ -292,7 +292,7 @@ class Distribution(object):
                 os.system("gpg --export --armor %s > %s/media/%s/media_info/pubkey" % (gpgName, tmpdir, m.name))
             else:
                 try:
-                    remotepubkey = urllib.urlopen("%s/%s/release/media_info/pubkey" % (repopath, m.name))
+                    remotepubkey = urllib.request.urlopen("%s/%s/release/media_info/pubkey" % (repopath, m.name))
                     targetpubkey = open("%s/media/%s/media_info/pubkey" % (outdir, m.name), 'wb')
                     targetpubkey.write(remotepubkey.read())
                     targetpubkey.close()
