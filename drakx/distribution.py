@@ -1,5 +1,7 @@
 from future.standard_library import install_aliases
 install_aliases()
+from urllib.request import urlopen
+from urllib.error import URLError
 
 import shutil,os,perl,string,fnmatch,re,time,urllib.request
 from drakx.common import *
@@ -69,7 +71,7 @@ class Distribution(object):
         for m in list(self.media.keys()):
             synthesis = repopath + "/" + self.media[m].getSynthesis()
             print(color("Retrieving synthesis for %s: %s" % (m, synthesis), GREEN))
-            synthesisfile = urllib.request.urlopen(synthesis)
+            synthesisfile = urlopen(synthesis)
             output = open(self.media[m].getLocalName(), 'wb')
             output.write(synthesisfile.read())
             output.close()
@@ -275,10 +277,10 @@ class Distribution(object):
 
 
                     try:
-                        remotefile = urllib.request.urlopen(source)
-                    except urllib.URLError as urlerr:
+                        remotefile = urlopen(source)
+                    except URLError as urlerr:
                         continue
-                    target = "%s/media/%s/%s.rpm" % (outdir, m.name, pkg.fullname())
+                    target = "%s/media/%s/%s.rpm" % (tmpdir, m.name, pkg.fullname())
                     if not os.path.exists(target):
                         pkgs.append(source)
                         targetout = open(target, 'wb')
@@ -295,11 +297,11 @@ class Distribution(object):
                 os.system("gpg --export --armor %s > %s/media/%s/media_info/pubkey" % (gpgName, tmpdir, m.name))
             else:
                 try:
-                    remotepubkey = urllib.request.urlopen("%s/%s/release/media_info/pubkey" % (repopath, m.name))
-                    targetpubkey = open("%s/media/%s/media_info/pubkey" % (outdir, m.name), 'wb')
+                    remotepubkey = urlopen("%s/%s/release/media_info/pubkey" % (repopath, m.name))
+                    targetpubkey = open("%s/media/%s/media_info/pubkey" % (tmpdir, m.name), 'wb')
                     targetpubkey.write(remotepubkey.read())
                     targetpubkey.close()
-                except urllib.URLError as urlerr:
+                except URLError as urlerr:
                     print(color("Couldn't retrieve pubkey for %s; ignoring..." % m.name, YELLOW))
 
         print(color("Writing %s/media/media_info/media.cfg" % tmpdir, GREEN))
