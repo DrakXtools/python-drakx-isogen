@@ -7,8 +7,8 @@ import os
 config = ReleaseConfig("2013", "Twelve Angry Penguins", "Non-Free", subversion="Beta", medium="DVD", outdir="/mnt/BIG/distrib/iso")
 
 srcdir = "./"
-rpmsrate = "../../perl-install/install/share/meta-task/rpmsrate-raw"
-compssusers = "../../perl-install/install/share/meta-task/compssUsers.pl"
+rpmsrate = "/usr/share/meta-task/rpmsrate-raw"
+compssusers = "/usr/share/meta-task/compssUsers.pl"
 filedeps = srcdir + "file-deps"
 
 media = []
