@@ -285,7 +285,6 @@ class Distribution(object):
                             m.size += s.st_size
                     else:
                         localcopy = os.path.join("/var", target[1:])
-                        print("localcopy: %s" % localcopy)
                         if not os.path.exists(localcopy):
                             print("Fetching[%d/%d]: %s" % (allpkgs.index(pkg), len(allpkgs), source))
                             try:
@@ -373,18 +372,19 @@ class Distribution(object):
         # if none specified, rely on it's presence in grub target tree...
         if not stage1:
             stage1 = "%s/grub/%s/install/images/all.cpio.xz" % (config.rootdir, self.arch)
-        print(color("Copying first stage installer: %s -> %s/install/images/all.cpio.xz" % (stage1, tmpdir), GREEN))
+        stage1filename = os.path.basename(stage1)
+        print(color("Copying first stage installer: %s -> %s/install/images/%s" % (stage1, tmpdir, stage1filename), GREEN))
         os.mkdir("%s/install" % tmpdir)
         os.mkdir("%s/install/images" % tmpdir)
-        os.symlink(os.path.realpath(stage1), tmpdir + "/install/images/all.cpio.xz")
+        os.symlink(os.path.realpath(stage1), tmpdir + "/install/images/" + os.path.basename(stage1))
 
         if not stage2:
             stage2 = os.path.realpath(config.rootdir) + "/install/stage2/mdkinst.cpio.xz"
-
+        stage2filename = os.path.basename(stage2)
         versionFile = os.path.realpath(config.rootdir) + "/install/stage2/VERSION"
-        print(color("Copying second stage installer: %s -> %s/install/stage2/mdkinst.cpio.xz" % (stage2, tmpdir), GREEN))
+        print(color("Copying second stage installer: %s -> %s/install/stage2/%s" % (stage2, tmpdir, stage2filename), GREEN))
         os.mkdir(tmpdir + "/install/stage2")
-        os.symlink(stage2, tmpdir + "/install/stage2/mdkinst.cpio.xz")
+        os.symlink(stage2, tmpdir + "/install/stage2/" + stage2filename)
         os.symlink(versionFile, tmpdir + "/install/stage2/VERSION")
 
         if not advertising:
