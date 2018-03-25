@@ -266,28 +266,43 @@ class Distribution(object):
         for m in media:
             print(color("Generating media tree for " + m.name, GREEN))
             os.system("mkdir -p %s/media/%s" % (tmpdir, m.name))
+            os.system("mkdir -p /var/%s/media/%s" % (tmpdir, m.name))
 
             pkgs = []
             for pkg in allpkgs:
                 if excludere.match(pkg.name()):
                     print(color("skipping2: " + pkg.name(), YELLOW, RESET, DIM))
                     continue
-                for rep in "release", "updates":
+                for rep in ["release"]:# FIXME:, "updates":
                     source = "%s/media/%s/%s/%s.rpm" % (repopath, m.name, rep, pkg.fullname())
 
-
-                    try:
-                        remotefile = urlopen(source)
-                    except URLError as urlerr:
-                        continue
                     target = "%s/media/%s/%s.rpm" % (tmpdir, m.name, pkg.fullname())
-                    if not os.path.exists(target):
-                        pkgs.append(source)
-                        targetout = open(target, 'wb')
-                        targetout.write(remotefile.read())
-                        targetout.close()
-                        s = os.stat(target)
-                        m.size += s.st_size
+                    if source[0] == "/" and os.path.exists(source):
+                        if not os.path.islink(target):
+                            pkgs.append(source)
+                            os.symlink(source, target)
+                            s = os.stat(source)
+                            m.size += s.st_size
+                    else:
+                        localcopy = os.path.join("/var", target[1:])
+                        print("localcopy: %s" % localcopy)
+                        if not os.path.exists(localcopy):
+                            print("Fetching[%d/%d]: %s" % (allpkgs.index(pkg), len(allpkgs), source))
+                            try:
+                                remotefile = urlopen(source)
+                            except URLError as urlerr:
+                                print(urlerr)
+                                continue
+
+                            pkgs.append(source)
+                            targetout = open(localcopy, 'wb')
+                            targetout.write(remotefile.read())
+                            targetout.close()
+
+                        if not os.path.islink(target):
+                            os.symlink(localcopy, target)
+                            s = os.stat(localcopy)
+                            m.size += s.st_size
 
             self.media[m.name].pkgs = pkgs
             if not os.path.exists("%s/media/%s/media_info" % (tmpdir, m.name)):
